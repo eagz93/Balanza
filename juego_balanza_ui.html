@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Laboratorio de Balanzas</title>
+  <style>
+    :root { --ink: #17212b; --paper: #f5f1e6; --red: #c74b3c; --teal: #087e8b; --gold: #f4b942; --line: #bcc4c0; --angulo-inclinacion: 8deg; }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: repeating-linear-gradient(0deg, #f5f1e6, #f5f1e6 27px, #eee8da 28px); font-family: Georgia, "Times New Roman", serif; }
+    button, input { font: inherit; }
+    button { cursor: pointer; }
+    .app { width: min(1180px, calc(100% - 32px)); margin: 0 auto; padding: 28px 0 44px; }
+    header { display: flex; justify-content: space-between; align-items: end; gap: 16px; border-bottom: 3px solid var(--ink); padding-bottom: 16px; }
+    h1, h2, p { margin: 0; } h1 { font-size: clamp(2rem, 5vw, 3.6rem); letter-spacing: 0; } h2 { font-size: 1.1rem; }
+    .eyebrow, .turn { font-family: "Trebuchet MS", sans-serif; font-size: .78rem; letter-spacing: .08em; text-transform: uppercase; }
+    .turn { background: var(--gold); padding: 8px 10px; font-weight: bold; text-align: center; }
+    .setup { max-width: 620px; margin: 48px auto; border: 2px solid var(--ink); background: #fffdf7; padding: 28px; box-shadow: 8px 8px 0 var(--teal); }
+    .setup p { margin-top: 8px; line-height: 1.45; }
+    .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin: 28px 0; }
+    label { display: grid; gap: 7px; font-family: "Trebuchet MS", sans-serif; font-weight: bold; font-size: .9rem; }
+    input { min-width: 0; border: 2px solid var(--ink); padding: 10px; background: #fff; }
+    .command { border: 2px solid var(--ink); background: var(--red); color: #fff; padding: 11px 16px; font-family: "Trebuchet MS", sans-serif; font-weight: bold; box-shadow: 3px 3px 0 var(--ink); }
+    .command:active { transform: translate(2px, 2px); box-shadow: 1px 1px 0 var(--ink); }
+    .command.alt { background: var(--teal); }
+    .hidden { display: none !important; }
+    #game { display: grid; grid-template-columns: 240px 1fr; gap: 22px; margin-top: 24px; }
+    aside { border-right: 2px solid var(--line); padding-right: 18px; }
+    .inventory { display: grid; gap: 9px; margin-top: 12px; }
+    .cube-source { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; border: 1px solid var(--ink); padding: 8px; background: #fffdf7; text-align: left; }
+    .cube-source[draggable="true"] { cursor: grab; } .cube-source.empty { opacity: .4; cursor: not-allowed; }
+    .swatch, .chip-dot { width: 22px; height: 22px; border: 1px solid var(--ink); flex: 0 0 auto; } .count { font-family: "Trebuchet MS", sans-serif; font-weight: bold; }
+    .game-area { min-width: 0; }
+    .controls { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin-bottom: 18px; }
+    .segmented { display: inline-flex; border: 2px solid var(--ink); }
+    .segmented button { border: 0; border-right: 1px solid var(--ink); background: #fffdf7; padding: 8px 10px; } .segmented button:last-child { border-right: 0; } .segmented button.active { background: var(--gold); font-weight: bold; }
+    .notice { font-family: "Trebuchet MS", sans-serif; font-size: .88rem; min-height: 1.25rem; }
+    .balance-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+    .balance { position: relative; min-height: 300px; overflow: hidden; border: 2px solid var(--ink); background: #fffdf7; padding: 14px; }
+    .balance h2 { text-align: center; } .balance-state { text-align: center; font-family: "Trebuchet MS", sans-serif; font-size: .78rem; margin-top: 5px; min-height: 1rem; }
+    .scale { position: absolute; left: 50%; bottom: 50px; width: 86%; height: 150px; transform: translateX(-50%); transition: transform .35s ease; transform-origin: 50% 75%; }
+    .scale.visual-level-0 { transform: translateX(-50%) rotate(calc(-1 * var(--angulo-inclinacion))); } .scale.visual-level-2 { transform: translateX(-50%) rotate(var(--angulo-inclinacion)); }
+    .beam { position: absolute; left: 0; right: 0; bottom: 60px; height: 8px; background: var(--ink); }
+    .pivot { position: absolute; left: calc(50% - 21px); bottom: 0; width: 42px; height: 58px; background: var(--teal); clip-path: polygon(50% 0, 100% 100%, 0 100%); }
+    .pan { position: absolute; bottom: 45px; width: 39%; min-height: 70px; border: 3px solid var(--ink); border-top: 0; background: #dceef0; padding: 8px; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 5px; }
+    .pan.left { left: 0; } .pan.right { right: 0; } .pan::before { content: ""; position: absolute; width: 1px; height: 25px; background: var(--ink); top: -25px; left: 50%; }
+    .placed { width: 16px; height: 16px; border: 1px solid var(--ink); }
+    .staging { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 20px; }
+    .drop-zone { min-height: 116px; border: 2px dashed var(--teal); background: #e8f4f3; padding: 10px; } .drop-zone.over { background: #cce5e1; }
+    .drop-zone h2 { font-size: .95rem; } .pending-cubes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .pending-cube { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--ink); padding: 4px; background: #fff; cursor: pointer; } .pending-cube .chip-dot { width: 15px; height: 15px; }
+    .footer-actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 20px; }
+    .hint { font-family: "Trebuchet MS", sans-serif; font-size: .9rem; min-height: 1.3rem; }
+    dialog { border: 3px solid var(--ink); max-width: min(680px, calc(100% - 24px)); padding: 24px; background: #fffdf7; box-shadow: 8px 8px 0 var(--red); }
+    dialog::backdrop { background: rgb(23 33 43 / .5); } .guess-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 18px 0; } .guess-grid label { grid-template-columns: 1fr 70px; align-items: center; }
+    @media (max-width: 760px) { .app { width: min(100% - 20px, 1180px); } header { align-items: start; flex-direction: column; } #game { grid-template-columns: 1fr; } aside { border-right: 0; border-bottom: 2px solid var(--line); padding: 0 0 18px; } .inventory { grid-template-columns: repeat(2, 1fr); } .balance-grid { grid-template-columns: 1fr; } .fields, .guess-grid { grid-template-columns: 1fr; } }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header><div><p class="eyebrow">Juego de deduccion</p><h1>Laboratorio de Balanzas</h1></div><div id="turn" class="turn hidden"></div></header>
+    <section id="setup" class="setup"><h2>Preparar partida</h2><p>Los cubos del mismo color tienen el mismo peso secreto. La inclinacion siempre usa el mismo angulo: no revela cuanto pesa de mas un lado.</p><div class="fields"><label>Jugadores (1-8)<input id="players" type="number" min="1" max="8" value="1"></label><label>Cubos por color (1-20)<input id="cubes" type="number" min="1" max="20" value="4"></label></div><button id="start" class="command">Empezar partida</button></section>
+    <section id="game" class="hidden"><aside><p class="eyebrow">Inventario</p><h2 id="player-name"></h2><div id="inventory" class="inventory"></div></aside><div class="game-area"><div class="controls"><span class="eyebrow">Balanza destino</span><div class="segmented"><button data-balance="principal" class="active">Principal</button><button data-balance="secundaria">Secundaria</button></div><span id="notice" class="notice"></span></div><div id="balances" class="balance-grid"></div><div class="staging"><section id="drop-left" class="drop-zone" data-side="left"><h2>Plato izquierdo temporal</h2><div class="pending-cubes"></div></section><section id="drop-right" class="drop-zone" data-side="right"><h2>Plato derecho temporal</h2><div class="pending-cubes"></div></section></div><div class="footer-actions"><button id="confirm" class="command">Listo: confirmar movimiento</button><button id="clear" class="command alt">Vaciar seleccion</button><button id="guess" class="command alt">Adivinar pesos</button><button id="reveal-one" class="command alt">Revelar 1 color al azar</button></div><p id="hint" class="hint"></p></div></section>
+  </main>
+  <dialog id="guess-dialog"><form method="dialog"><h2>Una sola adivinanza</h2><p>Completa todos los pesos. Al enviar, la partida termina.</p><div id="guess-fields" class="guess-grid"></div><button value="confirm" id="submit-guess" class="command">Comprobar</button><button value="cancel" class="command alt">Cancelar</button></form></dialog>
+  <script>
+    const colors = { rojo: '#d84a43', azul: '#3675c9', verde: '#4e9a5f', amarillo: '#f2c84b', morado: '#8a5ba6', naranja: '#ec8a38', rosa: '#df819c', cyan: '#43aeb1' };
+    const state = { player: 0, selected: 'principal', pending: { left: [], right: [] }, inventories: [], balances: { principal: { left: [], right: [] }, secundaria: { left: [], right: [] } }, weights: {}, guessed: false, revealedColor: null };
+    const $ = (selector) => document.querySelector(selector);
+    function randomWeights() { const used = new Set(); for (const color of Object.keys(colors)) { let weight; do { weight = Math.floor(Math.random() * 25) + 1; } while (used.has(weight)); used.add(weight); state.weights[color] = weight; } }
+    function startGame() { const players = Number($('#players').value), cubes = Number($('#cubes').value); if (!Number.isInteger(players) || players < 1 || players > 8 || !Number.isInteger(cubes) || cubes < 1 || cubes > 20) { alert('Introduce valores validos.'); return; } randomWeights(); state.player = 0; state.guessed = false; state.revealedColor = null; state.pending = { left: [], right: [] }; state.balances = { principal: { left: [], right: [] }, secundaria: { left: [], right: [] } }; state.inventories = Array.from({ length: players }, () => Object.fromEntries(Object.keys(colors).map((color) => [color, cubes]))); $('#hint').textContent = ''; $('#setup').classList.add('hidden'); $('#game').classList.remove('hidden'); $('#turn').classList.remove('hidden'); render(); }
+    function render() { $('#turn').textContent = `Turno ${state.player + 1} de ${state.inventories.length}`; $('#player-name').textContent = `Jugador ${state.player + 1}`; $('#reveal-one').disabled = Boolean(state.revealedColor) || state.guessed; renderInventory(); renderBalances(); renderPending(); document.querySelectorAll('[data-balance]').forEach((button) => button.classList.toggle('active', button.dataset.balance === state.selected)); }
+    function renderInventory() { const inventory = state.inventories[state.player]; $('#inventory').innerHTML = Object.entries(colors).map(([color, hex]) => `<button class="cube-source ${inventory[color] ? '' : 'empty'}" draggable="${inventory[color] > 0}" data-color="${color}"><span class="swatch" style="background:${hex}"></span><span>${color}</span><span class="count">${inventory[color]}</span></button>`).join(''); document.querySelectorAll('.cube-source').forEach((cube) => cube.addEventListener('dragstart', (event) => { if (cube.classList.contains('empty')) { event.preventDefault(); return; } event.dataTransfer.setData('color', cube.dataset.color); })); }
+    function visualLevel(balance) { const total = (side) => balance[side].reduce((sum, color) => sum + state.weights[color], 0); return Math.sign(total('right') - total('left')) + 1; }
+    function renderBalances() { $('#balances').innerHTML = Object.entries(state.balances).map(([id, balance]) => { const level = visualLevel(balance); const label = level === 1 ? 'Nivelada' : 'Inclinacion constante'; const cubes = (side) => balance[side].map((color) => `<span class="placed" style="background:${colors[color]}"></span>`).join(''); return `<section class="balance"><h2>${id === 'principal' ? 'Balanza principal' : 'Balanza secundaria'}</h2><p class="balance-state">${label}</p><div class="scale visual-level-${level}"><div class="beam"></div><div class="pivot"></div><div class="pan left">${cubes('left')}</div><div class="pan right">${cubes('right')}</div></div></section>`; }).join(''); }
+    function renderPending() { for (const side of ['left', 'right']) { const zone = $(`#drop-${side} .pending-cubes`); zone.innerHTML = state.pending[side].map((color, index) => `<button class="pending-cube" data-side="${side}" data-index="${index}" title="Devolver al inventario"><span class="chip-dot" style="background:${colors[color]}"></span>${color}</button>`).join(''); } document.querySelectorAll('.pending-cube').forEach((cube) => cube.addEventListener('click', () => { const color = state.pending[cube.dataset.side].splice(Number(cube.dataset.index), 1)[0]; state.inventories[state.player][color]++; render(); })); }
+    function addPending(side, color) { if (!state.inventories[state.player][color]) return; state.inventories[state.player][color]--; state.pending[side].push(color); $('#notice').textContent = 'Movimiento pendiente: la balanza sigue sin evaluarse.'; render(); }
+    function clearPending() { for (const side of ['left', 'right']) state.pending[side].forEach((color) => state.inventories[state.player][color]++); state.pending = { left: [], right: [] }; $('#notice').textContent = ''; render(); }
+    function confirmMove() { if (!state.pending.left.length && !state.pending.right.length) { $('#notice').textContent = 'Arrastra al menos un cubo a un plato temporal.'; return; } const balance = state.balances[state.selected]; balance.left.push(...state.pending.left); balance.right.push(...state.pending.right); state.pending = { left: [], right: [] }; $('#notice').textContent = 'Movimiento confirmado. El angulo no indica la diferencia de peso.'; state.player = (state.player + 1) % state.inventories.length; render(); }
+    function openGuess() { if (state.guessed) return; $('#guess-fields').innerHTML = Object.keys(colors).map((color) => `<label><span><i class="chip-dot" style="display:inline-block; vertical-align:middle; background:${colors[color]}"></i> ${color}</span><input type="number" required data-guess="${color}"></label>`).join(''); $('#guess-dialog').showModal(); }
+    function revealRandomColor() {
+      if (state.revealedColor || state.guessed) return;
+      const colorList = Object.keys(colors);
+      const randomColor = colorList[Math.floor(Math.random() * colorList.length)];
+      state.revealedColor = randomColor;
+      $('#hint').textContent = `Pista unica: ${randomColor} pesa ${state.weights[randomColor]}.`;
+      $('#notice').textContent = 'Se revelo el valor de un color. Ya no puedes pedir otra pista.';
+      render();
+    }
+    $('#start').addEventListener('click', startGame); $('#confirm').addEventListener('click', confirmMove); $('#clear').addEventListener('click', clearPending); $('#guess').addEventListener('click', openGuess); $('#reveal-one').addEventListener('click', revealRandomColor); document.querySelectorAll('[data-balance]').forEach((button) => button.addEventListener('click', () => { state.selected = button.dataset.balance; render(); }));
+    document.querySelectorAll('.drop-zone').forEach((zone) => { zone.addEventListener('dragover', (event) => { event.preventDefault(); zone.classList.add('over'); }); zone.addEventListener('dragleave', () => zone.classList.remove('over')); zone.addEventListener('drop', (event) => { event.preventDefault(); zone.classList.remove('over'); addPending(zone.dataset.side, event.dataTransfer.getData('color')); }); });
+    $('#submit-guess').addEventListener('click', (event) => { const guesses = [...document.querySelectorAll('[data-guess]')]; if (!guesses.every((input) => input.value !== '')) { event.preventDefault(); return; } state.guessed = true; const correct = guesses.every((input) => Number(input.value) === state.weights[input.dataset.guess]); setTimeout(() => alert(correct ? 'Adivinanza correcta. Has descubierto todos los pesos.' : 'No todos los pesos son correctos. La partida ha terminado.'), 0); });
+  </script>
+</body>
+</html>
